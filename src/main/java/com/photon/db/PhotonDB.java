@@ -114,6 +114,11 @@ public class PhotonDB {
 		return db.leaveSession(Username);
 	}
 
+	@DeleteMapping("/ClearDB")
+	boolean clearDB(String Confirm) {
+		return db.clearDB(Confirm);
+	}
+
 	public static void main(String[] args) {
 		db = new MongoDB();
 		SpringApplication.run(PhotonDB.class, args);

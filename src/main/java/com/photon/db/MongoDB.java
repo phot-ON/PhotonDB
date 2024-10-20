@@ -117,14 +117,14 @@ public class MongoDB {
 
 	public boolean createSession(String Username, String SessionID) {
 		Document User = Users.find(Filters.eq("Username", Username)).first();
-		if (User != null && User.get("SessionID").equals("")) {
+		if (User != null) {
 			Users.deleteOne(Filters.eq("Username", Username));
 			Users.insertOne(new Document("Username", Username).append("FCM", User.get("FCM")).append("SessionID", SessionID).append("Friends", User.get("Friends")));
 			Sessions.insertOne(new Document("SessionID", SessionID).append("Images", new ArrayList<String>()));
 			System.out.println("Session Created: " + SessionID);
 			return true;
 		} else {
-			System.out.println("Session Already Exists: " + User.get("SessionID"));
+			System.out.println("User non existent: " + Username + " - " + SessionID);
 			return false;
 		}
 
@@ -134,7 +134,10 @@ public class MongoDB {
 		Document User = Users.find(Filters.eq("Username", Username)).first();
 		Document Session = Sessions.find(Filters.eq("SessionID", SessionID)).first();
 
-		if (User != null && Session != null && User.get("SessionID").equals("")) {
+		if (User != null && Session != null) {
+			if(User.get("SessionID")!="" && Users.countDocuments(Filters.eq("SessionID", User.get("SessionID"))) == 1){
+				Sessions.deleteOne(Filters.eq("SessionID", User.get("SessionID")));
+		}
 			Users.deleteOne(Filters.eq("Username", Username));
 			Users.insertOne(new Document("Username", Username).append("FCM", User.get("FCM")).append("SessionID", SessionID).append("Friends", User.get("Friends")));
 			System.out.println("Session Joined: " + SessionID);
@@ -197,16 +200,27 @@ public class MongoDB {
 	public boolean leaveSession(String Username) {
 		Document User = Users.find(Filters.eq("Username", Username)).first();
 		if (User != null && !User.get("SessionID").equals("")) {
-			Users.deleteOne(Filters.eq("Username", Username));
-			Users.insertOne(new Document("Username", Username).append("FCM", User.get("FCM")).append("SessionID", "").append("Friends", User.get("Friends")));
-			if (Users.countDocuments(Filters.eq("SessionID", User.get("SessionID"))) == 0) {
+		if (Users.countDocuments(Filters.eq("SessionID", User.get("SessionID"))) == 1) {
 				Sessions.deleteOne(Filters.eq("SessionID", User.get("SessionID")));
 			}
+			Users.deleteOne(Filters.eq("Username", Username));
+			Users.insertOne(new Document("Username", Username).append("FCM", User.get("FCM")).append("SessionID", "").append("Friends", User.get("Friends")));
 			System.out.println("Session Left: " + Username);
 			return true;
 		} else {
 			System.out.println("Session Not Found or User Not Found: " + Username);
 			return false;
 		}
+	}
+
+	public boolean clearDB(String confirm) {
+		if (confirm.equals("photon")) {
+			Users.deleteMany(new Document());
+			Sessions.deleteMany(new Document());
+			return true;
+		}else{
+			return false;
+		}
+
 	}
 }
